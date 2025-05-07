@@ -1,0 +1,46 @@
+-- list of sites to block
+set blockList to {"youtube.com", "nba.com", "bleacherreport.com", "reddit.com", "linkedin.com", "espn.com"}
+
+-- initialize counter
+set timesBlocked to 0
+
+-- path to log file in your home folder
+set logFile to (POSIX path of (path to home folder)) & "timesblocked.txt"
+
+-- make sure the file exists
+do shell script "touch " & quoted form of logFile
+
+repeat
+	tell application "Google Chrome"
+		repeat with w in windows
+			-- iterate tabs backwards so closing doesn’t shift indices
+			repeat with i from (count tabs of w) to 1 by -1
+				set t to tab i of w
+				repeat with site in blockList
+					if URL of t contains site then
+						-- close the offending tab
+						close t
+						
+						-- increment our counter
+						set timesBlocked to timesBlocked + 1
+						
+						-- grab a formatted timestamp
+						set timeString to do shell script "date '+%Y-%m-%d %H:%M:%S'"
+						
+						-- build log entry
+						set logEntry to timeString & "  BLOCKED: " & site & "  (Total blocked: " & timesBlocked & ")" & linefeed
+						
+						-- append to the log file
+						do shell script "echo " & quoted form of logEntry & " >> " & quoted form of logFile
+						
+						-- move on to the next tab
+						exit repeat
+					end if
+				end repeat
+			end repeat
+		end repeat
+	end tell
+	
+	-- pause before checking again
+	delay 5
+end repeat
